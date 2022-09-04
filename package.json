@@ -1,0 +1,11 @@
+{
+  "name": "nasa-sdet-project",
+  "version": "1.0.0",
+  "description": "SDET Project using Postman and Newman to create a testing collection for the NASA Mars Rover API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Daniel Cadena",
+  "license": "ISC"
+}

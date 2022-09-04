@@ -1,0 +1,732 @@
+{
+	"info": {
+		"_postman_id": "4f1436b3-dfb6-42c1-9cfd-b157484316eb",
+		"name": "Mars_Rover_API",
+		"description": "We would like to test different scenarios that the API offers:\n\n1.  Retrieve the first 10 Mars photos made by \"Curiosity\" on 1000 Martian sol.\n2.  Retrieve the first 10 Mars photos made by \"Curiosity\" on Earth date equal to 1000 Martian sol.\n3.  Retrieve and compare the first 10 Mars photos made by \"Curiosity\" on 1000 sol and on Earth date equal to 1000 Martian sol.\n4.  Validate that the amounts of pictures that each \"Curiosity\" camera took on 1000 Mars sol is not greater than 10 times the amount taken by other cameras on the same date.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "2800846"
+	},
+	"item": [
+		{
+			"name": "Test_1",
+			"item": [
+				{
+					"name": "Retrieve the first n Mars photos by Mars Sol",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request executed successfully.\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const response = pm.response.json();",
+									"const photos_arr = response.photos;",
+									"",
+									"const number_of_photos = parseInt(pm.collectionVariables.get('n_photos'))",
+									"let photos = photos_arr.slice(0, number_of_photos)",
+									"",
+									"photos = photos.map((photo, index) => {",
+									"    let out = {",
+									"        \"id\": index + 1,",
+									"        \"img_src\": photo.img_src",
+									"    }",
+									"    return out",
+									"});",
+									"",
+									"pm.test(`Validate that ${number_of_photos} photos were retrieved.`, () => {",
+									"    pm.expect(photos.length).to.be.eql(number_of_photos);",
+									"});",
+									"",
+									"photos.forEach((photo, index) => {",
+									"    pm.test(`Ensure that img_src for photo ${index + 1} is not empty.`, () => {",
+									"        pm.expect(photo.img_src).is.not.empty;",
+									"        pm.expect(photo.img_src).is.a('string');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.nasa.gov/mars-photos/api/v1/rovers/{{Rover}}/photos?sol={{Sol}}&api_key={{API_KEY}}",
+							"protocol": "https",
+							"host": [
+								"api",
+								"nasa",
+								"gov"
+							],
+							"path": [
+								"mars-photos",
+								"api",
+								"v1",
+								"rovers",
+								"{{Rover}}",
+								"photos"
+							],
+							"query": [
+								{
+									"key": "sol",
+									"value": "{{Sol}}"
+								},
+								{
+									"key": "api_key",
+									"value": "{{API_KEY}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Retrieve the first 10 Mars photos made by \"Curiosity\" on 1000 Martian sol."
+		},
+		{
+			"name": "Test_2",
+			"item": [
+				{
+					"name": "Find Earth Day from Martian Sol",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request executed successfully.\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const date_regexp = /^\\d{4}-\\d{2}-\\d{2}$/;",
+									"const response = pm.response.json();",
+									"const photo_manifest = response.photo_manifest;",
+									"const photos = photo_manifest.photos",
+									"",
+									"const sol_day = parseInt(pm.collectionVariables.get('Sol'));",
+									"",
+									"let found_photo = photos.find(photo => photo.sol === sol_day);",
+									"let tests_passed = 2;",
+									"",
+									"pm.test('Requested Mars Sol day exists.', () => {",
+									"    pm.expect(found_photo).is.not.undefined;",
+									"    pm.expect(found_photo.sol).is.a('number');",
+									"    pm.expect(found_photo.sol).is.equal(sol_day);",
+									"    tests_passed--;",
+									"});",
+									"",
+									"pm.test('Validate earth_date field.', () => {",
+									"    pm.expect(found_photo.earth_date).is.not.null;",
+									"    pm.expect(found_photo.earth_date).is.a('string');",
+									"    pm.expect((date_regexp.test(found_photo.earth_date))).is.true;",
+									"",
+									"    pm.collectionVariables.set('earth_date', found_photo.earth_date);",
+									"    ",
+									"    tests_passed--;",
+									"});",
+									"",
+									"if (tests_passed > 0) {",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.nasa.gov/mars-photos/api/v1/manifests/{{Rover}}?api_key={{API_KEY}}",
+							"protocol": "https",
+							"host": [
+								"api",
+								"nasa",
+								"gov"
+							],
+							"path": [
+								"mars-photos",
+								"api",
+								"v1",
+								"manifests",
+								"{{Rover}}"
+							],
+							"query": [
+								{
+									"key": "api_key",
+									"value": "{{API_KEY}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve the first n Mars photos by Earth Date",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request executed successfully.\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const response = pm.response.json();",
+									"const photos_arr = response.photos;",
+									"",
+									"const number_of_photos = parseInt(pm.collectionVariables.get('n_photos'))",
+									"let photos = photos_arr.slice(0, number_of_photos)",
+									"",
+									"photos = photos.map((photo, index) => {",
+									"    let out = {",
+									"        \"id\": index + 1,",
+									"        \"img_src\": photo.img_src,",
+									"        \"earth_date\": photo.earth_date",
+									"    }",
+									"    return out;",
+									"});",
+									"",
+									"pm.test(`Validate that ${number_of_photos} photos were retrieved.`, () => {",
+									"    pm.expect(photos.length).to.be.eql(number_of_photos);",
+									"});",
+									"",
+									"photos.forEach((photo, index) => {",
+									"    pm.test(`Ensure that img_src for photo ${index + 1} is not empty.`, () => {",
+									"        pm.expect(photo.img_src).is.not.empty;",
+									"        pm.expect(photo.img_src).is.a('string');",
+									"    });",
+									"",
+									"    pm.test(`Ensure that earth_date for photo ${index + 1} matches requested date.`, () => {",
+									"        pm.expect(photo.earth_date).is.not.empty;",
+									"        pm.expect(photo.earth_date).is.a('string');",
+									"        pm.expect(photo.earth_date).is.eq(pm.collectionVariables.get('earth_date'));",
+									"    });",
+									"});",
+									"",
+									"console.log(photos)"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.nasa.gov/mars-photos/api/v1/rovers/{{Rover}}/photos?earth_date={{earth_date}}&api_key={{API_KEY}}",
+							"protocol": "https",
+							"host": [
+								"api",
+								"nasa",
+								"gov"
+							],
+							"path": [
+								"mars-photos",
+								"api",
+								"v1",
+								"rovers",
+								"{{Rover}}",
+								"photos"
+							],
+							"query": [
+								{
+									"key": "earth_date",
+									"value": "{{earth_date}}"
+								},
+								{
+									"key": "api_key",
+									"value": "{{API_KEY}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Retrieve the first 10 Mars photos made by \"Curiosity\" on Earth date equal to 1000 Martian sol."
+		},
+		{
+			"name": "Test_3",
+			"item": [
+				{
+					"name": "Find Earth Day from Martian Sol",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request executed successfully.\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const date_regexp = /^\\d{4}-\\d{2}-\\d{2}$/;",
+									"const response = pm.response.json();",
+									"const photo_manifest = response.photo_manifest;",
+									"const photos = photo_manifest.photos",
+									"",
+									"const sol_day = parseInt(pm.collectionVariables.get('Sol'));",
+									"",
+									"let found_photo = photos.find(photo => photo.sol === sol_day);",
+									"let tests_passed = 2;",
+									"",
+									"pm.test('Requested Mars Sol day exists.', () => {",
+									"    pm.expect(found_photo).is.not.undefined;",
+									"    pm.expect(found_photo.sol).is.a('number');",
+									"    pm.expect(found_photo.sol).is.equal(sol_day);",
+									"    tests_passed--;",
+									"});",
+									"",
+									"pm.test('Validate earth_date field.', () => {",
+									"    pm.expect(found_photo.earth_date).is.not.null;",
+									"    pm.expect(found_photo.earth_date).is.a('string');",
+									"    pm.expect((date_regexp.test(found_photo.earth_date))).is.true;",
+									"",
+									"    pm.collectionVariables.set('earth_date', found_photo.earth_date);",
+									"    ",
+									"    tests_passed--;",
+									"});",
+									"",
+									"if (tests_passed > 0) {",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.nasa.gov/mars-photos/api/v1/manifests/{{Rover}}?api_key={{API_KEY}}",
+							"protocol": "https",
+							"host": [
+								"api",
+								"nasa",
+								"gov"
+							],
+							"path": [
+								"mars-photos",
+								"api",
+								"v1",
+								"manifests",
+								"{{Rover}}"
+							],
+							"query": [
+								{
+									"key": "api_key",
+									"value": "{{API_KEY}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve the first n Mars photos by Earth Date",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request executed successfully.\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const response = pm.response.json();",
+									"const photos_arr = response.photos;",
+									"",
+									"const number_of_photos = parseInt(pm.collectionVariables.get('n_photos'))",
+									"let photos = photos_arr.slice(0, number_of_photos)",
+									"",
+									"photos = photos.map((photo, index) => {",
+									"    let out = {",
+									"        \"id\": index + 1,",
+									"        \"img_src\": photo.img_src,",
+									"        \"earth_date\": photo.earth_date",
+									"    }",
+									"    return out;",
+									"});",
+									"",
+									"pm.test(`Validate that ${number_of_photos} photos were retrieved.`, () => {",
+									"    pm.expect(photos.length).to.be.eql(number_of_photos);",
+									"});",
+									"",
+									"photos.forEach((photo, index) => {",
+									"    pm.test(`Ensure that img_src for photo ${index + 1} is not empty.`, () => {",
+									"        pm.expect(photo.img_src).is.not.empty;",
+									"        pm.expect(photo.img_src).is.a('string');",
+									"    });",
+									"",
+									"    pm.test(`Ensure that earth_date for photo ${index + 1} matches requested date.`, () => {",
+									"        pm.expect(photo.earth_date).is.not.empty;",
+									"        pm.expect(photo.earth_date).is.a('string');",
+									"        pm.expect(photo.earth_date).is.eq(pm.collectionVariables.get('earth_date'));",
+									"    });",
+									"});",
+									"",
+									"console.log(photos)",
+									"pm.collectionVariables.set('photos_by_earth_date', JSON.stringify(photos));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.nasa.gov/mars-photos/api/v1/rovers/{{Rover}}/photos?earth_date={{earth_date}}&api_key={{API_KEY}}",
+							"protocol": "https",
+							"host": [
+								"api",
+								"nasa",
+								"gov"
+							],
+							"path": [
+								"mars-photos",
+								"api",
+								"v1",
+								"rovers",
+								"{{Rover}}",
+								"photos"
+							],
+							"query": [
+								{
+									"key": "earth_date",
+									"value": "{{earth_date}}"
+								},
+								{
+									"key": "api_key",
+									"value": "{{API_KEY}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve the first n Mars photos by Mars Sol",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request executed successfully.\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const mars_photos_by_earth_day = JSON.parse(pm.collectionVariables.get('photos_by_earth_date'));",
+									"",
+									"const response = pm.response.json();",
+									"const photos_arr = response.photos;",
+									"",
+									"const number_of_photos = parseInt(pm.collectionVariables.get('n_photos'))",
+									"let photos = photos_arr.slice(0, number_of_photos)",
+									"",
+									"photos = photos.map((photo, index) => {",
+									"    let out = {",
+									"        \"id\": index + 1,",
+									"        \"img_src\": photo.img_src,",
+									"        \"earth_date\": photo.earth_date",
+									"    }",
+									"    return out",
+									"});",
+									"",
+									"pm.test(`Validate that ${number_of_photos} photos were retrieved.`, () => {",
+									"    pm.expect(photos.length).to.be.eql(number_of_photos);",
+									"});",
+									"",
+									"photos.forEach((photo, index) => {",
+									"    pm.test(`Ensure that img_src for photo ${index + 1} is not empty.`, () => {",
+									"        pm.expect(photo.img_src).is.not.empty;",
+									"        pm.expect(photo.img_src).is.a('string');",
+									"    });",
+									"});",
+									"",
+									"for (let i = 0; i < mars_photos_by_earth_day.length; i++) {",
+									"    pm.test(`Mars photo ${i + 1} by Earth Date is equal to Mars photo ${i + 1} by Mars Sol`, () => {",
+									"        pm.expect(mars_photos_by_earth_day[i].img_src).is.equal(photos[i].img_src);",
+									"    })",
+									"}",
+									"",
+									"console.log('Photos:', photos)",
+									"console.log('Photos Earth:', mars_photos_by_earth_day)"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.nasa.gov/mars-photos/api/v1/rovers/{{Rover}}/photos?sol={{Sol}}&api_key={{API_KEY}}",
+							"protocol": "https",
+							"host": [
+								"api",
+								"nasa",
+								"gov"
+							],
+							"path": [
+								"mars-photos",
+								"api",
+								"v1",
+								"rovers",
+								"{{Rover}}",
+								"photos"
+							],
+							"query": [
+								{
+									"key": "sol",
+									"value": "{{Sol}}"
+								},
+								{
+									"key": "api_key",
+									"value": "{{API_KEY}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Retrieve and compare the first 10 Mars photos made by \"Curiosity\" on 1000 sol and on Earth date equal to 1000 Martian sol."
+		},
+		{
+			"name": "Test_4",
+			"item": [
+				{
+					"name": "Retrieve photos taken on Mars Sol day",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request executed successfully.\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const date_regexp = /^\\d{4}-\\d{2}-\\d{2}$/;",
+									"const response = pm.response.json();",
+									"const photo_manifest = response.photo_manifest;",
+									"const photos = photo_manifest.photos",
+									"",
+									"const sol_day = parseInt(pm.collectionVariables.get('Sol'));",
+									"",
+									"let sol_day_manifest = photos.find(photo => photo.sol === sol_day);",
+									"",
+									"let tests_passed = 2;",
+									"",
+									"pm.test('Requested Mars Sol day exists.', () => {",
+									"    pm.expect(sol_day_manifest).is.not.undefined;",
+									"    pm.expect(sol_day_manifest.sol).is.a('number');",
+									"    pm.expect(sol_day_manifest.sol).is.equal(sol_day);",
+									"    tests_passed--;",
+									"});",
+									"",
+									"pm.test('Validate cameras field is an array and not empty.', () => {",
+									"    pm.expect(sol_day_manifest.cameras).is.not.empty;",
+									"    pm.expect(sol_day_manifest.cameras).is.an('array');",
+									"",
+									"    pm.collectionVariables.set('sol_day_manifest', JSON.stringify(sol_day_manifest));",
+									"    ",
+									"    tests_passed--;",
+									"});",
+									"",
+									"if (tests_passed > 0) {",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.nasa.gov/mars-photos/api/v1/manifests/{{Rover}}?api_key={{API_KEY}}",
+							"protocol": "https",
+							"host": [
+								"api",
+								"nasa",
+								"gov"
+							],
+							"path": [
+								"mars-photos",
+								"api",
+								"v1",
+								"manifests",
+								"{{Rover}}"
+							],
+							"query": [
+								{
+									"key": "api_key",
+									"value": "{{API_KEY}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve the first n Mars photos by Mars Sol",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request executed successfully.\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const response = pm.response.json();",
+									"const photos_arr = response.photos;",
+									"",
+									"const sol_day_manifest = JSON.parse(pm.collectionVariables.get('sol_day_manifest'));",
+									"const cameras_array = sol_day_manifest.cameras;",
+									"const number_of_cameras = cameras_array.length;",
+									"",
+									"let photos_per_camera = [];",
+									"",
+									"cameras_array.forEach(camera => {",
+									"    photos_per_camera.push(photos_arr.filter(photo => photo.camera.name === camera));",
+									"});",
+									"",
+									"for (let camera_index = 0; camera_index < number_of_cameras; camera_index++) {",
+									"    for (let subcamera_index = 0; subcamera_index < number_of_cameras; subcamera_index++) {",
+									"        if (!(camera_index == subcamera_index)) {",
+									"            pm.test(`Validate if the number of photos of camera ${cameras_array[camera_index]} are less than 10 times of ${cameras_array[subcamera_index]}.`, () => {",
+									"                pm.expect(photos_per_camera[camera_index].length).is.lessThan(10 * photos_per_camera[subcamera_index].length)",
+									"            });",
+									"        }",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.nasa.gov/mars-photos/api/v1/rovers/{{Rover}}/photos?sol={{Sol}}&api_key={{API_KEY}}",
+							"protocol": "https",
+							"host": [
+								"api",
+								"nasa",
+								"gov"
+							],
+							"path": [
+								"mars-photos",
+								"api",
+								"v1",
+								"rovers",
+								"{{Rover}}",
+								"photos"
+							],
+							"query": [
+								{
+									"key": "sol",
+									"value": "{{Sol}}"
+								},
+								{
+									"key": "api_key",
+									"value": "{{API_KEY}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Validate that the amounts of pictures that each \"Curiosity\" camera took on 1000 Mars sol is not greater than 10 times the amount taken by other cameras on the same date."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "API_KEY",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "Rover",
+			"value": "curiosity",
+			"type": "string"
+		},
+		{
+			"key": "Sol",
+			"value": "1000",
+			"type": "string"
+		},
+		{
+			"key": "n_photos",
+			"value": "15",
+			"type": "string"
+		},
+		{
+			"key": "earth_date",
+			"value": ""
+		},
+		{
+			"key": "photos_by_earth_date",
+			"value": ""
+		},
+		{
+			"key": "sol_day_manifest",
+			"value": ""
+		}
+	]
+}
